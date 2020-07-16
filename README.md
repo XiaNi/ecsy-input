@@ -1,52 +1,44 @@
-# ecsy-input
-A simple, cross-platform input system for ECSY
+# Armada
+A data driven game engine for WebGL, building on Mozilla ECSY with a Behavior pattern to emphasize modularity.
 
 # Why Do I Need This?
-Mapping a WASD keyboard to drive movement or state is easy enough for a few inputs-- but once you start developing complex behaviors, and you need them accounted for across multiple platforms or input types, it quickly becomes a monstrous task to maintain or add additional functionality to your input <-> response loops without having to test for lots of unintended consequences, often marking up your code with conditionals to prevent unwanted state from these new actions (as an example-- some people want crouching + jumping to be simultaneous and some people want to prevent the mid-air crouch)
+Everything you need to get started without having to fuss with writng your own input system, state machine, networking layer, etc.
 
-ecsy-input abstracts the complexity of the input layer down to "actions". All input is collected, mapped to actions, and then validated at the action layer-- opposing, overriding and blocking actions are considered and then pushed to any entity with an ActionListener component attached. While default input mappings are provided, ecsy-input can be initialized with custom input mappings, so you can decide what inputs map to what actions and how actions relate to each other.
-
-ecsy-input is not tied to any particular game engine, so you can use it anywhere you use ECSY.
 
 # Installation
 ```
-npm install ecsy-input
+npm install @xr3ngine/armada
 ```
 
 # How to use
 ```javascript
 import { World } from 'ecsy'
-import {  initializeInputSystems } from 'ecsy-input'
+import {  initializeInput } from '@xr3ngine/armada'
 
 const world = new World()
 
 const options = {
-  xr: true,
-  mouse: true,
-  keyboard: true,
-  mobile: false,
-  gamepad: true,
   debug: true
 }
 
-initializeInputSystems(world, options)
+initializeInput(world, options)
 
 world.execute()
 ```
 
 To make an object receive input:
 ```javascript
-import {  addInputHandlingToEntity } from 'ecsy-input'
+import {  addInputHandlingToEntity } from '@xr3ngine/armada'
 const newEntity = addInputHandlingToEntity(world.createEntity())
 ```
 
 You can override the input mappings per device
-Input mappings map device input to abstract, cross-platform actions
+Input mappings map device input to abstract, cross-platform input
 
 ```javascript
-      import { initializeInputSystems } from "../dist/ecsy-input.module.js"
+      import { initializeInputSystems } from "../dist/armada.module.js"
 
-      const Axes = {
+      const Input = {
         SCREENXY: 0
       }
 
@@ -61,15 +53,15 @@ Input mappings map device input to abstract, cross-platform actions
 
       const inputMap = {
         mouse: {
-          actions: {
+          input: {
             0: Actions.PRIMARY
           },
-          axes: {
-            mousePosition: Axes.SCREENXY
+          input: {
+            mousePosition: Input.SCREENXY
           }
         },
         keyboard: {
-          actions: {
+          input: {
             w: Actions.FORWARD,
             a: Actions.LEFT,
             s: Actions.RIGHT,

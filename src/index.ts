@@ -1,114 +1,76 @@
 import { Entity, World } from "ecsy"
 
-import MouseInputSystem from "./systems/MouseInputSystem"
-import KeyboardInputSystem from "./systems/KeyboardInputSystem"
-import GamepadInputSystem from "./systems/GamepadInputSystem"
-
-import MouseInput from "./components/MouseInput"
-import KeyboardInput from "./components/KeyboardInput"
-import GamepadInput from "./components/GamepadInput"
-
-import { isBrowser } from "./utils/IsBrowser"
-import UserInput from "./components/UserInput"
-import InputActionHandler from "./components/InputActionHandler"
-import InputAxisHandler2D from "./components/InputAxisHandler2D"
-import InputDebugSystem from "./systems/InputDebugSystem"
-import InputActionSystem from "./systems/InputActionSystem"
-import InputAxisSystem from "./systems/InputAxisSystem"
-import InputReceiver from "./components/InputReceiver"
-import InputMap from "./interfaces/InputMap"
+import InputSystem from "./input/systems/InputSystem"
+import { isBrowser } from "./common/utils/IsBrowser"
+import Input from "./input/components/Input"
+import InputMap from "./input/interfaces/InputMap"
+import { DefaultInputMap } from "./input/defaults/DefaultInputData"
+import Subscription from "./subscription/components/Subscription"
+import State from "./state/components/State"
+import { TransformComponent } from "./common/defaults/components/TransformComponent"
+import Actor from "./common/defaults/components/Actor"
+import StateSystem from "./state/systems/StateSystem"
 
 const DEFAULT_OPTIONS = {
-  mouse: true,
-  keyboard: true,
-  touchscreen: true,
-  gamepad: true,
   debug: false
 }
 
-export function initializeInputSystems(world: World, options = DEFAULT_OPTIONS, inputMap?: InputMap): void {
+export function initializeInputSystems(world: World, options = DEFAULT_OPTIONS, inputMap?: InputMap): World | null {
   if (options.debug) console.log("Initializing input systems...")
 
-  if (!isBrowser) return console.error("Couldn't initialize input, are you in a browser?")
+  if (!isBrowser) {
+    console.error("Couldn't initialize input, are you in a browser?")
+    return null
+  }
 
   if (options.debug) {
     console.log("Registering input systems with the following options:")
     console.log(options)
   }
 
-  world.registerSystem(InputActionSystem).registerSystem(InputAxisSystem)
-
+  world.registerSystem(InputSystem).registerSystem(StateSystem)
   world
-    .registerComponent(UserInput)
-    .registerComponent(InputActionHandler)
-    .registerComponent(InputAxisHandler2D)
-    .registerComponent(InputReceiver)
-
-  if (options.keyboard) world.registerSystem(KeyboardInputSystem).registerComponent(KeyboardInput)
-  if (options.mouse) world.registerSystem(MouseInputSystem).registerComponent(MouseInput)
-  if (options.gamepad) world.registerSystem(GamepadInputSystem).registerComponent(GamepadInput)
-  // TODO: VR, Mobile
+    .registerComponent(Input)
+    .registerComponent(State)
+    .registerComponent(Actor)
+    .registerComponent(Subscription)
+    .registerComponent(TransformComponent)
 
   const inputSystemEntity = world
     .createEntity()
-    .addComponent(UserInput)
-    .addComponent(InputActionHandler)
-    .addComponent(InputAxisHandler2D)
-
-  const inputReceiverEntity = world
-    .createEntity()
-    .addComponent(InputReceiver)
-    .addComponent(InputActionHandler)
-    .addComponent(InputAxisHandler2D)
+    .addComponent(Input)
+    .addComponent(State)
+    .addComponent(Actor)
+    .addComponent(Subscription)
+    .addComponent(TransformComponent)
 
   // Custom Action Map
   if (inputMap) {
     console.log("Using input map:")
     console.log(inputMap)
-    inputSystemEntity.getMutableComponent(UserInput).inputMap = inputMap
+    ;(inputSystemEntity.getMutableComponent(Input) as any).map = inputMap
   } else {
-    console.log("No input map")
+    console.log("No input map provided, defaulting to default input")
+    ;(inputSystemEntity.getMutableComponent(Input) as any).map = DefaultInputMap
   }
 
-  if (options.keyboard) {
-    inputSystemEntity.addComponent(KeyboardInput)
-    if (options.debug) console.log("Registered KeyboardInputSystem and added KeyboardInput component to input entity")
-  }
+  // if (options.debug) {
+  //   world.registerSystem(InputDebugSystem)
+  //   console.log("INPUT: Registered input systems.")
+  // }
 
-  if (options.mouse) {
-    inputSystemEntity.addComponent(MouseInput)
-    if (options.debug) console.log("Registered MouseInputSystem and added MouseInput component to input entity")
-  }
-
-  if (options.gamepad) {
-    inputSystemEntity.addComponent(GamepadInput)
-    // TODO: Initialize with user mappings
-    if (options.debug) console.log("Registered GamepadInputSystem and added MouseInput component to input entity")
-  }
-
-  // TODO: Add touchscreen
-  if (options.touchscreen) {
-    // world.registerSystem(TouchscreenInputSystem, null)
-    // inputSystemEntity.addComponent(TouchscreenInput)
-    if (options.debug) {
-      console.log("Touchscreen is not yet implemented")
-    }
-  }
-
-  if (options.debug) {
-    world.registerSystem(InputDebugSystem)
-    console.log("INPUT: Registered input systems.")
-  }
+  return world
 }
 
-export function addInputHandlingToEntity(entity: Entity, inputFilter?: InputMap): Entity {
-  // Try get component on axishandler, inputreceiver
-  if (entity.getComponent(InputReceiver) !== undefined) console.warn("Warning: Entity already has input receiver component")
+export function addInputHandlingToEntity(entity: Entity): Entity {
+  // Try get component on inputhandler, inputreceiver
+  if (entity.getComponent(Input) !== undefined) console.warn("Warning: Entity already has input component")
   else {
     entity
-      .addComponent(InputReceiver)
-      .addComponent(InputAxisHandler2D)
-      .addComponent(InputActionHandler)
+      .addComponent(Input)
+      .addComponent(State)
+      .addComponent(Subscription)
+      .addComponent(Actor)
   }
   return entity
 }
